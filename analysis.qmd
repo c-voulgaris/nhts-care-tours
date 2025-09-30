@@ -1,0 +1,86 @@
+---
+title: "analysis"
+execute:
+  message: false
+  warning: false
+format:
+  html:
+    theme: minty
+    toc: true
+    toc-location: left
+editor: visual
+---
+
+The purpose of this page is to check the sample size of tours by adults in 
+households with children under 9 from the 2017 NHTS.
+
+# Load data
+
+Data downloaded to `data` folder (listed in .gitignore) from https://nhts.ornl.gov/media/2016/download/csv.zip
+
+
+```{r}
+library(here)
+library(tidyverse)
+library(knitr)
+
+trips <- here("data",
+              "trippub.csv") |>
+  read_csv()
+
+people <- here("data",
+               "perpub.csv") |>
+  read_csv()
+
+hhs <- here("data",
+            "hhpub.csv") |>
+  read_csv()
+
+```
+
+# Identify sample of trips
+
+Identify all households with children between 5 and 9 (no one under 5 is 
+included in the people file).
+
+```{r}
+
+kid_hh_5to9 <- people |>
+  filter(R_AGE < 10,
+         R_AGE > 0) |>
+  group_by(HOUSEID) |>
+  summarise(n = n())
+
+```
+
+Filter households to only include those with children under 10.
+
+```{r}
+
+kid_hh <- hhs |>
+  filter(YOUNGCHILD > 0 | HOUSEID %in% kid_hh_5to9$HOUSEID)
+
+```
+
+Filter trips to only include those by households with kids under 10, where the 
+traveler is between 23 and 69 years old, and the trip begins at home (there
+would be one of these for every home-based tour).
+
+```{r}
+
+kid_hh_trips <- trips |>
+  filter(HOUSEID %in% kid_hh$HOUSEID) |>
+  mutate(home_start = WHYFROM %in% c("01", "02"),
+         home_end = WHYTO %in% c("01", "02"))
+  
+kid_hh_trips |>
+  group_by(home_start, home_end) |>
+  summarize(`Number of trips` = n()) |>
+  kable()
+```
+
+There is a sample of 60,498 tours. 2983 are loop trips, and 57,515 that begin 
+with a trip from home to somewhere else. 
+
+
+
