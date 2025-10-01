@@ -77,24 +77,83 @@ kid_hh_trips <- trips |>
   select(HOUSEID, PERSONID, 
          TDTRPNUM, STRTTIME, ENDTIME,
          TRPMILES, WHYTO, WHYFROM,
-         home_start, home_end)
+         home_start, home_end) |>
+  mutate(trip_num = row_number())
   
-kid_hh_trips |>
-  group_by(home_start, home_end) |>
-  summarize(`Number of trips` = n()) |>
-  kable()
 ```
 
-There is a sample of 38,801 tours. 1745 are loop trips, and 37,056 that begin 
-with a trip from home to somewhere else. 
+
 
 # Constructing tours
 
 Not sure if this is the best approach, but it's one possible approach.
 
 ```{r}
-# In progress
+
+tours <- kid_hh_trips |>
+  filter(home_start | TDTRPNUM == "01") |>
+  rename(start_trip_num = trip_num) |>
+  mutate(tour_num = row_number())
+
+tour_ends <- kid_hh_trips |>
+  filter(home_end)
+
+end_trip_num <- c(tours$start_trip_num[2:nrow(tours)] - 1,
+                  tour_ends$trip_num[nrow(tour_ends)])
+
+tours <- tours |>
+  mutate(end_trip_num = end_trip_num) |>
+  mutate(num_trips = end_trip_num - start_trip_num +1)
+
+tour_nums <- rep(tours$tour_num, times = tours$num_trips)
+
+kid_hh_trips <- kid_hh_trips |>
+  mutate(tour_num = tour_nums) |>
+  mutate(hrs_from_4am_trip_start = 
+           as.numeric(substr(STRTTIME, 1, 2)) - 4) |> # survey day starts at 4am
+  mutate(hrs_from_4am_trip_start = ifelse(hrs_from_4am_trip_start < 0,
+                                          hrs_from_4am_trip_start + 24,
+                                          hrs_from_4am_trip_start)) |>
+  mutate(mins_from_4am_trip_start = 
+           as.numeric(substr(STRTTIME, 3, 4)) + 
+           (60 * hrs_from_4am_trip_start)) |>
+  mutate(hrs_from_4am_trip_end = 
+           as.numeric(substr(ENDTIME, 1, 2)) - 4) |> # survey day starts at 4am
+  mutate(hrs_from_4am_trip_end = ifelse(hrs_from_4am_trip_end < 0,
+                                          hrs_from_4am_trip_end + 24,
+                                          hrs_from_4am_trip_end)) |>
+  mutate(mins_from_4am_trip_end = 
+           as.numeric(substr(ENDTIME, 3, 4)) +
+                        (60 * hrs_from_4am_trip_end)) 
+
+next_trip <- c(kid_hh_trips$mins_from_4am_trip_start[2:nrow(kid_hh_trips)], 0)
+
+kid_hh_trips <- kid_hh_trips |>
+  mutate(next_trip = next_trip) |>
+  mutate(trip_time = mins_from_4am_trip_end - mins_from_4am_trip_start) |>
+  mutate(time_at_dest = ifelse(home_end, 0,
+                               next_trip - mins_from_4am_trip_end)) 
+
+open_tours <- kid_hh_trips[kid_hh_trips$time_at_dest < 0,]$tour_num
+
+kid_hh_trips <- kid_hh_trips |>
+  filter(!tour_num %in% open_tours)
+  
+kid_hh_tours <- kid_hh_trips |>
+  group_by(HOUSEID, PERSONID, tour_num) |>
+  mutate(max_activity_time = max(time_at_dest)) |>
+  mutate(main_purp = ifelse(time_at_dest == max_activity_time,
+                            WHYTO, "zzz")) |>
+  summarise(travel_time = sum(trip_time),
+            tour_purp = min(main_purp),
+            activity_time = sum(time_at_dest),
+            num_trips = n()) |>
+  filter(num_trips > 1,
+         tour_purp != "-7",
+         tour_purp != "-8")
+
+nrow(kid_hh_tours)
 
 ```
 
-
+Final sample of 37,017 tours.
