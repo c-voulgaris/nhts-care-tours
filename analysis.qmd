@@ -69,9 +69,15 @@ would be one of these for every home-based tour).
 ```{r}
 
 kid_hh_trips <- trips |>
-  filter(HOUSEID %in% kid_hh$HOUSEID) |>
+  filter(HOUSEID %in% kid_hh$HOUSEID,
+         R_AGE > 22,
+         R_AGE < 70) |>
   mutate(home_start = WHYFROM %in% c("01", "02"),
-         home_end = WHYTO %in% c("01", "02"))
+         home_end = WHYTO %in% c("01", "02")) |>
+  select(HOUSEID, PERSONID, 
+         TDTRPNUM, STRTTIME, ENDTIME,
+         TRPMILES, WHYTO, WHYFROM,
+         home_start, home_end)
   
 kid_hh_trips |>
   group_by(home_start, home_end) |>
@@ -79,8 +85,16 @@ kid_hh_trips |>
   kable()
 ```
 
-There is a sample of 60,498 tours. 2983 are loop trips, and 57,515 that begin 
+There is a sample of 38,801 tours. 1745 are loop trips, and 37,056 that begin 
 with a trip from home to somewhere else. 
 
+# Constructing tours
+
+Not sure if this is the best approach, but it's one possible approach.
+
+```{r}
+# In progress
+
+```
 
 

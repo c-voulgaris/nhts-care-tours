@@ -83,6 +83,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#load-data" id="toc-load-data" class="nav-link active" data-scroll-target="#load-data">Load data</a></li>
   <li><a href="#identify-sample-of-trips" id="toc-identify-sample-of-trips" class="nav-link" data-scroll-target="#identify-sample-of-trips">Identify sample of trips</a></li>
+  <li><a href="#constructing-tours" id="toc-constructing-tours" class="nav-link" data-scroll-target="#constructing-tours">Constructing tours</a></li>
   </ul>
 </nav>
 </div>
@@ -149,14 +150,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>Filter trips to only include those by households with kids under 10, where the traveler is between 23 and 69 years old, and the trip begins at home (there would be one of these for every home-based tour).</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>kid_hh_trips <span class="ot">&lt;-</span> trips <span class="sc">|&gt;</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(HOUSEID <span class="sc">%in%</span> kid_hh<span class="sc">$</span>HOUSEID) <span class="sc">|&gt;</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">home_start =</span> WHYFROM <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"01"</span>, <span class="st">"02"</span>),</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>         <span class="at">home_end =</span> WHYTO <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"01"</span>, <span class="st">"02"</span>))</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>kid_hh_trips <span class="sc">|&gt;</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(home_start, home_end) <span class="sc">|&gt;</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="st">`</span><span class="at">Number of trips</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">n</span>()) <span class="sc">|&gt;</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(HOUSEID <span class="sc">%in%</span> kid_hh<span class="sc">$</span>HOUSEID,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>         R_AGE <span class="sc">&gt;</span> <span class="dv">22</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>         R_AGE <span class="sc">&lt;</span> <span class="dv">70</span>) <span class="sc">|&gt;</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">home_start =</span> WHYFROM <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"01"</span>, <span class="st">"02"</span>),</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>         <span class="at">home_end =</span> WHYTO <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"01"</span>, <span class="st">"02"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(HOUSEID, PERSONID, </span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>         TDTRPNUM, STRTTIME, ENDTIME,</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>         TRPMILES, WHYTO, WHYFROM,</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>         home_start, home_end)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>kid_hh_trips <span class="sc">|&gt;</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(home_start, home_end) <span class="sc">|&gt;</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="st">`</span><span class="at">Number of trips</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">n</span>()) <span class="sc">|&gt;</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">kable</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
 <thead>
@@ -170,28 +177,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <tr class="odd">
 <td style="text-align: left;">FALSE</td>
 <td style="text-align: left;">FALSE</td>
-<td style="text-align: right;">55612</td>
+<td style="text-align: right;">41058</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">FALSE</td>
 <td style="text-align: left;">TRUE</td>
-<td style="text-align: right;">57966</td>
+<td style="text-align: right;">37468</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">TRUE</td>
 <td style="text-align: left;">FALSE</td>
-<td style="text-align: right;">57515</td>
+<td style="text-align: right;">37056</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">TRUE</td>
 <td style="text-align: left;">TRUE</td>
-<td style="text-align: right;">2983</td>
+<td style="text-align: right;">1745</td>
 </tr>
 </tbody>
 </table>
 </div>
 </div>
-<p>There is a sample of 60,498 tours. 2983 are loop trips, and 57,515 that begin with a trip from home to somewhere else.</p>
+<p>There is a sample of 38,801 tours. 1745 are loop trips, and 37,056 that begin with a trip from home to somewhere else.</p>
+</section>
+<section id="constructing-tours" class="level1">
+<h1>Constructing tours</h1>
+<p>Not sure if this is the best approach, but it’s one possible approach.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># In progress</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 </section>
 
 </main>
